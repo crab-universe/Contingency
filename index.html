@@ -240,7 +240,6 @@ function editContent(fi,ei,value){ let data=getData(); data.folders[fi].entries[
 // ===== DISPLAY & DRAG-DROP =====
 let draggedFolderIndex=null, draggedEntry=null;
 function displayFolders(){
-  console.log("DATA:", data);
   let data=getData();
   let search=document.getElementById("search").value.toLowerCase();
   let container=document.getElementById("folders");
