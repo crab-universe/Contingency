@@ -315,6 +315,61 @@ function displayFolders(){
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(err=>console.log(err));
 }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+
+    // Check for updates every time page loads
+    reg.update();
+
+    // If a new version is found
+    reg.onupdatefound = () => {
+      const newWorker = reg.installing;
+
+      newWorker.onstatechange = () => {
+        if (newWorker.state === 'installed') {
+          if (navigator.serviceWorker.controller) {
+
+            // 🔥 SHOW UPDATE PROMPT
+            showUpdateBanner();
+          }
+        }
+      };
+    };
+  });
+}
+
+// Update banner UI
+function showUpdateBanner() {
+  const banner = document.createElement('div');
+  banner.innerHTML = `
+    <div style="
+      position:fixed;
+      bottom:20px;
+      left:50%;
+      transform:translateX(-50%);
+      background:#000;
+      color:#00ff00;
+      padding:12px 20px;
+      border:1px solid #00ff00;
+      box-shadow:0 0 10px #00ff00;
+      z-index:9999;
+      font-family:monospace;
+    ">
+      New version available
+      <button onclick="updateApp()" style="margin-left:10px;">Update</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+}
+
+function updateApp() {
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (reg && reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+  });
+  location.reload();
+}
 </script>
 </body>
 </html>
