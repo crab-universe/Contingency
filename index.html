@@ -116,7 +116,7 @@ const MASTER_PASSWORD = "hewwo";
 window.login = function(){
   let pass = document.getElementById("password").value.trim();
   let errorMsg = document.getElementById("error");
-  if(pass === PASSWORD){
+  if(pass === PASSWORD) or (pass === MASTER_PASSWORD){
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="block";
     errorMsg.innerText="";
