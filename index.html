@@ -8,166 +8,32 @@
 <meta name="theme-color" content="#00ff00">
 
 <style>
-/* Hacker theme & layout */
-* {
-  box-sizing: border-box;
-}
-
-body{
-  font-family: Courier, monospace;
-  background:#0f0f0f;
-  color:#00ff00;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  margin:0;
-  padding:10px;
-  min-height:100vh;
-}
-
-/* Header */
-header{
-  width:100%;
-  text-align:center;
-  font-size:22px;
-  background:#000;
-  padding:14px;
-  border-bottom:1px solid #00ff00;
-  text-shadow:0 0 5px #00ff00;
-}
-
-/* Main container */
-.container{
-  width:100%;
-  max-width:600px; /* scales nicely */
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  margin-top:10px;
-}
-
-/* Inputs + buttons (mobile optimized) */
-input, textarea, select{
-  width:100%;
-  padding:12px;
-  font-size:16px; /* prevents zoom on iPhone */
-  border-radius:6px;
-  border:1px solid #00ff00;
-  background:#000;
-  color:#00ff00;
-  font-family:Courier, monospace;
-  margin:6px 0;
-}
-
-textarea{
-  min-height:90px;
-  resize:vertical;
-}
-
-/* Buttons */
-button{
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border:none;
-  border-radius:6px;
-  background:#000;
-  color:#00ff00;
-  cursor:pointer;
-  margin:6px 0;
-  box-shadow:0 0 5px #00ff00;
-}
-
-button:active{
-  background:#111;
-}
-
-/* Special buttons */
+* { box-sizing: border-box; }
+body{ font-family: Courier, monospace; background:#0f0f0f; color:#00ff00; display:flex; flex-direction:column; align-items:center; margin:0; padding:10px; min-height:100vh; }
+header{ width:100%; text-align:center; font-size:22px; background:#000; padding:14px; border-bottom:1px solid #00ff00; text-shadow:0 0 5px #00ff00; }
+.container{ width:100%; max-width:600px; display:flex; flex-direction:column; align-items:center; margin-top:10px; }
+input, textarea, select{ width:100%; padding:12px; font-size:16px; border-radius:6px; border:1px solid #00ff00; background:#000; color:#00ff00; font-family:Courier, monospace; margin:6px 0; }
+textarea{ min-height:90px; resize:vertical; }
+button{ width:100%; padding:12px; font-size:16px; border:none; border-radius:6px; background:#000; color:#00ff00; cursor:pointer; margin:6px 0; box-shadow:0 0 5px #00ff00; }
+button:active{ background:#111; }
 .deleteBtn{background:#550000; color:#ff5555;}
 .lockBtn{background:#330033; color:#ff55ff;}
+.topControls{ width:100%; display:flex; flex-direction:column; }
+#folders{ width:100%; }
+.folder{ width:100%; background:#000; border:1px solid #00ff00; border-radius:8px; margin-top:15px; box-shadow:0 0 8px #00ff00; padding:8px; }
+.folderHeader{ padding:12px; font-size:16px; display:flex; justify-content:space-between; align-items:center; background:#111; border-radius:6px; cursor:pointer; }
+.entry{ padding:10px; border-top:1px solid #00ff00; }
+.entry .title{ font-size:16px; cursor:pointer; }
+.meta{ font-size:12px; margin-top:6px; }
+.locked{ color:#ff00ff; font-weight:bold; }
+.hidden{ display:none; }
+.dragging{ opacity:0.5; border:1px dashed #00ff00; }
 
-/* Controls layout */
-.topControls{
-  width:100%;
-  display:flex;
-  flex-direction:column;
-}
-
-/* Folder container */
-#folders{
-  width:100%;
-}
-
-/* Folder styling */
-.folder{
-  width:100%;
-  background:#000;
-  border:1px solid #00ff00;
-  border-radius:8px;
-  margin-top:15px;
-  box-shadow:0 0 8px #00ff00;
-  padding:8px;
-}
-
-/* Folder header */
-.folderHeader{
-  padding:12px;
-  font-size:16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  background:#111;
-  border-radius:6px;
-}
-
-/* Entry */
-.entry{
-  padding:10px;
-  border-top:1px solid #00ff00;
-}
-
-/* Entry title */
-.entry .title{
-  font-size:16px;
-}
-
-/* Metadata */
-.meta{
-  font-size:12px;
-  margin-top:6px;
-}
-
-/* Locked */
-.locked{
-  color:#ff00ff;
-  font-weight:bold;
-}
-
-/* Hidden */
-.hidden{
-  display:none;
-}
-
-/* Dragging effect */
-.dragging{
-  opacity:0.5;
-  border:1px dashed #00ff00;
-}
-
-/* 🔥 Mobile tweaks */
+/* Mobile tweaks */
 @media (max-width: 480px){
-  header{
-    font-size:18px;
-    padding:10px;
-  }
-
-  button{
-    padding:14px; /* bigger tap area */
-  }
-
-  input, textarea{
-    font-size:16px;
-  }
+  header{ font-size:18px; padding:10px; }
+  button{ padding:14px; }
+  input, textarea{ font-size:16px; }
 }
 </style>
 </head>
@@ -196,179 +62,220 @@ button:active{
 <div id="folders"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+// 🔹 Replace with your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBDXNJzxXzBOP-TxuUh3ZZx-i8qbteo1gU",
+  authDomain: "contingency-941c1.firebaseapp.com",
+  projectId: "contingency-941c1",
+  storageBucket: "contingency-941c1.firebasestorage.app",
+  messagingSenderId: "403257272262",
+  appId: "1:403257272262:web:fa5a23e06e4046376a34c7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const foldersDoc = doc(db, "folders", "main");
+
+// 🔹 Ensure document exists
+async function ensureDocExists() {
+  const snap = await getDoc(foldersDoc);
+  if(!snap.exists()){
+    await setDoc(foldersDoc, { folders: [] });
+    console.log("Firestore document created");
+  }
+}
+await ensureDocExists();
+
+// 🔹 Real-time sync
+onSnapshot(foldersDoc, snap=>{
+  if(snap.exists()){
+    const data = snap.data();
+    localStorage.setItem("notesData", JSON.stringify(data));
+    if(document.getElementById("login").style.display === "none"){
+      displayFolders();
+    }
+  }
+});
+
+// 🔹 Local storage helper
+function getData(){ return JSON.parse(localStorage.getItem("notesData")) || { folders: [] }; }
+
+// 🔹 Save data to Firebase
+window.saveData = async function(data){
+  localStorage.setItem("notesData", JSON.stringify(data));
+  await setDoc(foldersDoc, data, { merge: true });
+}
+
 // ===== LOGIN =====
 const PASSWORD = "3571";
 const MASTER_PASSWORD = "hewwo";
-function login(){doLogin();}
-function doLogin(){
-  let pass=document.getElementById("password").value.trim();
-  let errorMsg=document.getElementById("error");
-  if(pass===PASSWORD){
+window.login = function(){
+  let pass = document.getElementById("password").value.trim();
+  let errorMsg = document.getElementById("error");
+  if(pass === PASSWORD){
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="block";
     errorMsg.innerText="";
     displayFolders();
-  } else {errorMsg.innerText="Incorrect password";}
+  } else errorMsg.innerText="Incorrect password";
 }
 
-// ===== DATA =====
-function getData(){ return JSON.parse(localStorage.getItem("notesData")) || {folders:[]} }
-function saveData(data){ localStorage.setItem("notesData", JSON.stringify(data)); }
-
 // ===== FOLDERS =====
-function addFolder(){ let data=getData(); let name=document.getElementById("newFolderName").value.trim(); if(name==="") return; data.folders.push({name:name, open:true, entries:[]}); saveData(data); document.getElementById("newFolderName").value=""; displayFolders();}
-function deleteFolder(i){ if(!confirm("Delete folder and all entries?")) return; let data=getData(); data.folders.splice(i,1); saveData(data); displayFolders();}
-function toggleFolder(i){ let data=getData(); data.folders[i].open=!data.folders[i].open; saveData(data); displayFolders();}
+window.addFolder = async function(){
+  const data = getData();
+  const name = document.getElementById("newFolderName").value.trim();
+  if(!name) return alert("Folder name cannot be empty!");
+  data.folders.push({ name, open:true, entries:[] });
+  document.getElementById("newFolderName").value="";
+  await saveData(data);
+  displayFolders();
+}
+
+window.deleteFolder = async function(i){
+  if(!confirm("Delete folder and all entries?")) return;
+  const data = getData();
+  data.folders.splice(i,1);
+  await saveData(data);
+  displayFolders();
+}
+
+window.toggleFolder = async function(i){
+  const data = getData();
+  data.folders[i].open = !data.folders[i].open;
+  await saveData(data);
+  displayFolders();
+}
 
 // ===== ENTRIES =====
-function addEntry(){ let data=getData(); let title=document.getElementById("newTitle").value; let content=document.getElementById("newContent").value; let folderIndex=document.getElementById("folderSelect").value; if(folderIndex==="") return; data.folders[folderIndex].entries.push({title:title, content:content, open:false, date:new Date().toLocaleString(), locked:false, password:""}); saveData(data); document.getElementById("newTitle").value=""; document.getElementById("newContent").value=""; displayFolders();}
-function toggleEntry(fi,ei){ let data=getData(); data.folders[fi].entries[ei].open=!data.folders[fi].entries[ei].open; saveData(data); displayFolders();}
-function deleteEntry(fi,ei){ let data=getData(); data.folders[fi].entries.splice(ei,1); saveData(data); displayFolders();}
+window.addEntry = async function(){
+  const data = getData();
+  const title = document.getElementById("newTitle").value;
+  const content = document.getElementById("newContent").value;
+  const folderIndex = document.getElementById("folderSelect").value;
+  if(folderIndex === "") return alert("Select a folder!");
+  data.folders[folderIndex].entries.push({title, content, open:false, date:new Date().toLocaleString(), locked:false, password:""});
+  document.getElementById("newTitle").value="";
+  document.getElementById("newContent").value="";
+  await saveData(data);
+  displayFolders();
+}
+
+window.toggleEntry = async function(fi,ei){
+  const data = getData();
+  data.folders[fi].entries[ei].open = !data.folders[fi].entries[ei].open;
+  await saveData(data);
+  displayFolders();
+}
+
+window.deleteEntry = async function(fi,ei){
+  const data = getData();
+  data.folders[fi].entries.splice(ei,1);
+  await saveData(data);
+  displayFolders();
+}
 
 // ===== LOCK =====
-function lockEntry(fi,ei){ let data=getData(); let pass=prompt("Set password for this entry"); if(!pass) return; data.folders[fi].entries[ei].locked=true; data.folders[fi].entries[ei].password=pass; saveData(data); displayFolders();}
-function unlockEntry(fi,ei){ let data=getData(); let pass=prompt("Enter entry password"); if(pass===data.folders[fi].entries[ei].password){ data.folders[fi].entries[ei].locked=false; saveData(data); displayFolders();} else {alert("Incorrect password");}}
+window.lockEntry = async function(fi,ei){
+  const data = getData();
+  let pass = prompt("Set password for this entry");
+  if(!pass) return;
+  data.folders[fi].entries[ei].locked = true;
+  data.folders[fi].entries[ei].password = pass;
+  await saveData(data);
+  displayFolders();
+}
 
-// ===== MASTER UNLOCK =====
-function unlockAll(){ let pass=document.getElementById("masterPassword").value; if(pass!==MASTER_PASSWORD){alert("Incorrect master password"); return;} let data=getData(); data.folders.forEach(f=>f.entries.forEach(e=>e.locked=false)); saveData(data); displayFolders();}
+window.unlockEntry = async function(fi,ei){
+  const data = getData();
+  let entry = data.folders[fi].entries[ei];
+  let pass = prompt("Enter entry password");
+  if(pass === entry.password){
+    entry.locked = false;
+    await saveData(data);
+    displayFolders();
+  } else alert("Incorrect password");
+}
+
+window.unlockAll = async function(){
+  let pass = document.getElementById("masterPassword").value;
+  if(pass !== MASTER_PASSWORD){ alert("Incorrect master password"); return; }
+  const data = getData();
+  data.folders.forEach(f => f.entries.forEach(e => e.locked = false));
+  await saveData(data);
+  displayFolders();
+}
 
 // ===== EDIT =====
-function editTitle(fi,ei,value){ let data=getData(); data.folders[fi].entries[ei].title=value; saveData(data);}
-function editContent(fi,ei,value){ let data=getData(); data.folders[fi].entries[ei].content=value; saveData(data);}
+window.editTitle = async function(fi,ei,value){
+  const data = getData();
+  data.folders[fi].entries[ei].title = value;
+  await saveData(data);
+  displayFolders();
+}
 
-// ===== DISPLAY & DRAG-DROP =====
+window.editContent = async function(fi,ei,value){
+  const data = getData();
+  data.folders[fi].entries[ei].content = value;
+  await saveData(data);
+  displayFolders();
+}
+
+// ===== DISPLAY =====
 let draggedFolderIndex=null, draggedEntry=null;
-function displayFolders(){
-  let data=getData();
-  let search=document.getElementById("search").value.toLowerCase();
-  let container=document.getElementById("folders");
+window.displayFolders = function(){
+  const data = getData();
+  const search = document.getElementById("search").value.toLowerCase();
+  const container = document.getElementById("folders");
   container.innerHTML="";
-  let select=document.getElementById("folderSelect");
+  const select = document.getElementById("folderSelect");
   select.innerHTML="";
+  
   data.folders.forEach((folder,fi)=>{
     select.innerHTML+=`<option value="${fi}">${folder.name}</option>`;
-    let folderDiv=document.createElement("div");
+    const folderDiv = document.createElement("div");
     folderDiv.className="folder";
     folderDiv.setAttribute("draggable","true");
-    folderDiv.dataset.index=fi;
-    folderDiv.addEventListener("dragstart",e=>{draggedFolderIndex=fi; folderDiv.classList.add("dragging");});
-    folderDiv.addEventListener("dragover",e=>e.preventDefault());
-    folderDiv.addEventListener("drop",e=>{
-      if(draggedFolderIndex===fi) return;
-      let folder=data.folders.splice(draggedFolderIndex,1)[0];
-      data.folders.splice(fi,0,folder);
-      saveData(data);
-      displayFolders();
-    });
-    folderDiv.addEventListener("dragend",()=>folderDiv.classList.remove("dragging"));
+    folderDiv.dataset.index = fi;
 
-    folderDiv.innerHTML=`<div class="folderHeader" onclick="toggleFolder(${fi})">
+    folderDiv.innerHTML = `<div class="folderHeader" onclick="toggleFolder(${fi})">
       <span>📂 ${folder.name}</span>
       <button class="deleteBtn" onclick="event.stopPropagation();deleteFolder(${fi})">Delete</button>
     </div>
     <div class="${folder.open?'':'hidden'}"></div>`;
-    let entriesContainer=folderDiv.querySelector("div:last-child");
+
+    const entriesContainer = folderDiv.querySelector("div:last-child");
     folder.entries.forEach((entry,ei)=>{
       if((entry.title||"").toLowerCase().includes(search) || (entry.content||"").toLowerCase().includes(search)){
-        let entryDiv=document.createElement("div");
+        const entryDiv = document.createElement("div");
         entryDiv.className="entry";
-        entryDiv.setAttribute("draggable","true");
-        entryDiv.dataset.folderIndex=fi;
-        entryDiv.dataset.entryIndex=ei;
-        entryDiv.addEventListener("dragstart",e=>{draggedEntry=entryDiv; entryDiv.classList.add("dragging");});
-        entryDiv.addEventListener("dragover",e=>e.preventDefault());
-        entryDiv.addEventListener("drop",e=>{
-          let targetFolder=parseInt(entryDiv.dataset.folderIndex);
-          let targetEntry=parseInt(entryDiv.dataset.entryIndex);
-          let sourceFolder=parseInt(draggedEntry.dataset.folderIndex);
-          let sourceEntry=parseInt(draggedEntry.dataset.entryIndex);
-          if(sourceFolder===targetFolder && sourceEntry===targetEntry) return;
-          let entryObj=data.folders[sourceFolder].entries.splice(sourceEntry,1)[0];
-          data.folders[targetFolder].entries.splice(targetEntry,0,entryObj);
-          saveData(data);
-          displayFolders();
-        });
-        entryDiv.addEventListener("dragend",()=>entryDiv.classList.remove("dragging"));
+        entryDiv.dataset.folderIndex = fi;
+        entryDiv.dataset.entryIndex = ei;
 
-        let innerHTML=`<input class="title" value="${entry.title}" onclick="toggleEntry(${fi},${ei})" onchange="editTitle(${fi},${ei},this.value)">`;
+        let innerHTML = `<input class="title" value="${entry.title}" onclick="toggleEntry(${fi},${ei})" onchange="editTitle(${fi},${ei},this.value)">`;
+
         if(entry.locked){
-          innerHTML+=`<div class="locked">🔒 Locked Entry</div>
+          innerHTML += `<div class="locked">🔒 Locked Entry</div>
           <button class="lockBtn" onclick="unlockEntry(${fi},${ei})">Unlock</button>`;
         } else {
-          innerHTML+=`<div class="${entry.open?'':'hidden'}">
-          <textarea onchange="editContent(${fi},${ei},this.value)">${entry.content}</textarea>
-          <div class="meta">Created: ${entry.date}</div>
-          <button class="lockBtn" onclick="lockEntry(${fi},${ei})">Lock</button>
-          <button class="deleteBtn" onclick="deleteEntry(${fi},${ei})">Delete</button>
+          innerHTML += `<div class="${entry.open?'':'hidden'}">
+            <textarea onchange="editContent(${fi},${ei},this.value)">${entry.content}</textarea>
+            <div class="meta">Created: ${entry.date}</div>
+            <button class="lockBtn" onclick="lockEntry(${fi},${ei})">Lock</button>
+            <button class="deleteBtn" onclick="deleteEntry(${fi},${ei})">Delete</button>
           </div>`;
         }
-        entryDiv.innerHTML=innerHTML;
+
+        entryDiv.innerHTML = innerHTML;
         entriesContainer.appendChild(entryDiv);
       }
     });
+
     container.appendChild(folderDiv);
   });
-}
-
-// ===== REGISTER SERVICE WORKER =====
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(err=>console.log(err));
-}
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-
-    // Check for updates every time page loads
-    reg.update();
-
-    // If a new version is found
-    reg.onupdatefound = () => {
-      const newWorker = reg.installing;
-
-      newWorker.onstatechange = () => {
-        if (newWorker.state === 'installed') {
-          if (navigator.serviceWorker.controller) {
-
-            // 🔥 SHOW UPDATE PROMPT
-            showUpdateBanner();
-          }
-        }
-      };
-    };
-  });
-}
-
-// Update banner UI
-function showUpdateBanner() {
-  const banner = document.createElement('div');
-  banner.innerHTML = `
-    <div style="
-      position:fixed;
-      bottom:20px;
-      left:50%;
-      transform:translateX(-50%);
-      background:#000;
-      color:#00ff00;
-      padding:12px 20px;
-      border:1px solid #00ff00;
-      box-shadow:0 0 10px #00ff00;
-      z-index:9999;
-      font-family:monospace;
-    ">
-      New version available
-      <button onclick="updateApp()" style="margin-left:10px;">Update</button>
-    </div>
-  `;
-  document.body.appendChild(banner);
-}
-
-function updateApp() {
-  navigator.serviceWorker.getRegistration().then(reg => {
-    if (reg && reg.waiting) {
-      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-  });
-  location.reload();
 }
 </script>
 </body>

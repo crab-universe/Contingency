@@ -1,36 +1,48 @@
-const CACHE_NAME = 'secure-notes-dynamic-v1';
+const CACHE_NAME = 'contplans-cache-v1';
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json',
+  './style.css',
+  './icon-192.png',
+  './icon-512.png'
+];
 
+// Install service worker and cache files
 self.addEventListener('install', event => {
-  self.skipWaiting(); // activate immediately
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('[SW] Caching app shell');
+      return cache.addAll(urlsToCache);
+    })
+  );
+  self.skipWaiting();
 });
 
+// Activate service worker
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
+    caches.keys().then(keys => 
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
     )
   );
-  self.clients.claim(); // take control instantly
+  self.clients.claim();
 });
 
-// Network-first strategy (always try fresh version)
+// Intercept network requests
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
   );
 });
+
+// Optional: Listen for skip waiting from main script
 self.addEventListener('message', event => {
-  if (event.data.type === 'SKIP_WAITING') {
+  if(event.data.type === 'SKIP_WAITING'){
     self.skipWaiting();
   }
 });

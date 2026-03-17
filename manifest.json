@@ -1,12 +1,22 @@
 {
-  "name": "Contingency",
-  "short_name": "Notes",
-  "start_url": "index.html",
+  "name": "Contingency Plans",
+  "short_name": "ContPlans",
+  "description": "Secure folder & entry notes with real-time sync",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f0f0f",
   "theme_color": "#00ff00",
+  "orientation": "portrait-primary",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
