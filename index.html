@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CoNtInGeNcY PlAnS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00ff00">
+
+<style>
+/* Hacker theme & layout */
+body{
+  font-family:Courier, monospace;
+  background:#0f0f0f;
+  color:#00ff00;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding-top:40px;
+  min-height:100vh;
+}
+*{box-sizing:border-box;}
+header{width:100%; text-align:center; font-size:28px; background:#000; color:#00ff00; padding:18px; border-bottom:1px solid #00ff00; text-shadow:0 0 5px #00ff00;}
+.container{width:500px; display:flex; flex-direction:column; align-items:center; margin-top:20px;}
+input, textarea, select{padding:8px; border-radius:4px; border:1px solid #00ff00; background:#000; color:#00ff00; font-family:'Courier New', monospace; text-align:center; box-shadow:0 0 5px #00ff00 inset; width:100%; margin:5px 0;}
+textarea{height:80px;}
+button{padding:7px 14px; border:none; border-radius:4px; background:#000; color:#00ff00; cursor:pointer; margin:4px; box-shadow:0 0 5px #00ff00;}
+button:hover{background:#111;}
+.deleteBtn{background:#550000; color:#ff5555;} .deleteBtn:hover{background:#770000;}
+.lockBtn{background:#330033; color:#ff55ff;} .lockBtn:hover{background:#550055;}
+.topControls{display:flex; flex-direction:column; align-items:center; width:100%; margin-bottom:20px;}
+#search{text-align:left; background:#000; color:#00ff00; border:1px solid #00ff00; box-shadow:0 0 5px #00ff00 inset;}
+#folders{width:100%; display:flex; flex-direction:column; align-items:center;}
+.folder{width:100%; max-width:500px; background:#000; border:1px solid #00ff00; border-radius:6px; margin-top:20px; box-shadow:0 0 5px #00ff00; padding:8px;}
+.folderHeader{background:#111; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:600; border-bottom:1px solid #00ff00;}
+.entry{width:100%; padding:8px; border-top:1px solid #00ff00; overflow-wrap: break-word;}
+.entry .title, .entry textarea{width:100%; border:none; background:none; color:#00ff00;}
+.meta{font-size:12px; color:#00ff00; margin-top:6px;}
+.locked{color:#ff00ff; font-weight:bold;}
+.hidden{display:none;}
+.dragging {opacity:0.5; border:1px dashed #00ff00;}
+</style>
+</head>
+<body>
+<header>Contingency Plans</header>
+
+<div id="login" class="container">
+<h3>Login</h3>
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="error" style="color:#ff5555;"></p>
+</div>
+
+<div id="app" class="container" style="display:none;">
+<div class="topControls">
+<input id="search" placeholder="Search..." onkeyup="displayFolders()">
+<input id="newFolderName" placeholder="New Folder">
+<button onclick="addFolder()">Create Folder</button>
+<input id="newTitle" placeholder="Entry Title">
+<textarea id="newContent" placeholder="Entry details"></textarea>
+<select id="folderSelect"></select>
+<button onclick="addEntry()">Add Entry</button>
+<input type="password" id="masterPassword" placeholder="Master Password">
+<button onclick="unlockAll()">Unlock All Entries</button>
+</div>
+<div id="folders"></div>
+</div>
+
+<script>
+// ===== LOGIN =====
+const PASSWORD = "3571";
+const MASTER_PASSWORD = "hewwo";
+function login(){doLogin();}
+function doLogin(){
+  let pass=document.getElementById("password").value.trim();
+  let errorMsg=document.getElementById("error");
+  if(pass===PASSWORD){
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+    errorMsg.innerText="";
+    displayFolders();
+  } else {errorMsg.innerText="Incorrect password";}
+}
+
+// ===== DATA =====
+function getData(){ return JSON.parse(localStorage.getItem("notesData")) || {folders:[]} }
+function saveData(data){ localStorage.setItem("notesData", JSON.stringify(data)); }
+
+// ===== FOLDERS =====
+function addFolder(){ let data=getData(); let name=document.getElementById("newFolderName").value.trim(); if(name==="") return; data.folders.push({name:name, open:true, entries:[]}); saveData(data); document.getElementById("newFolderName").value=""; displayFolders();}
+function deleteFolder(i){ if(!confirm("Delete folder and all entries?")) return; let data=getData(); data.folders.splice(i,1); saveData(data); displayFolders();}
+function toggleFolder(i){ let data=getData(); data.folders[i].open=!data.folders[i].open; saveData(data); displayFolders();}
+
+// ===== ENTRIES =====
+function addEntry(){ let data=getData(); let title=document.getElementById("newTitle").value; let content=document.getElementById("newContent").value; let folderIndex=document.getElementById("folderSelect").value; if(folderIndex==="") return; data.folders[folderIndex].entries.push({title:title, content:content, open:false, date:new Date().toLocaleString(), locked:false, password:""}); saveData(data); document.getElementById("newTitle").value=""; document.getElementById("newContent").value=""; displayFolders();}
+function toggleEntry(fi,ei){ let data=getData(); data.folders[fi].entries[ei].open=!data.folders[fi].entries[ei].open; saveData(data); displayFolders();}
+function deleteEntry(fi,ei){ let data=getData(); data.folders[fi].entries.splice(ei,1); saveData(data); displayFolders();}
+
+// ===== LOCK =====
+function lockEntry(fi,ei){ let data=getData(); let pass=prompt("Set password for this entry"); if(!pass) return; data.folders[fi].entries[ei].locked=true; data.folders[fi].entries[ei].password=pass; saveData(data); displayFolders();}
+function unlockEntry(fi,ei){ let data=getData(); let pass=prompt("Enter entry password"); if(pass===data.folders[fi].entries[ei].password){ data.folders[fi].entries[ei].locked=false; saveData(data); displayFolders();} else {alert("Incorrect password");}}
+
+// ===== MASTER UNLOCK =====
+function unlockAll(){ let pass=document.getElementById("masterPassword").value; if(pass!==MASTER_PASSWORD){alert("Incorrect master password"); return;} let data=getData(); data.folders.forEach(f=>f.entries.forEach(e=>e.locked=false)); saveData(data); displayFolders();}
+
+// ===== EDIT =====
+function editTitle(fi,ei,value){ let data=getData(); data.folders[fi].entries[ei].title=value; saveData(data);}
+function editContent(fi,ei,value){ let data=getData(); data.folders[fi].entries[ei].content=value; saveData(data);}
+
+// ===== DISPLAY & DRAG-DROP =====
+let draggedFolderIndex=null, draggedEntry=null;
+function displayFolders(){
+  let data=getData();
+  let search=document.getElementById("search").value.toLowerCase();
+  let container=document.getElementById("folders");
+  container.innerHTML="";
+  let select=document.getElementById("folderSelect");
+  select.innerHTML="";
+  data.folders.forEach((folder,fi)=>{
+    select.innerHTML+=`<option value="${fi}">${folder.name}</option>`;
+    let folderDiv=document.createElement("div");
+    folderDiv.className="folder";
+    folderDiv.setAttribute("draggable","true");
+    folderDiv.dataset.index=fi;
+    folderDiv.addEventListener("dragstart",e=>{draggedFolderIndex=fi; folderDiv.classList.add("dragging");});
+    folderDiv.addEventListener("dragover",e=>e.preventDefault());
+    folderDiv.addEventListener("drop",e=>{
+      if(draggedFolderIndex===fi) return;
+      let folder=data.folders.splice(draggedFolderIndex,1)[0];
+      data.folders.splice(fi,0,folder);
+      saveData(data);
+      displayFolders();
+    });
+    folderDiv.addEventListener("dragend",()=>folderDiv.classList.remove("dragging"));
+
+    folderDiv.innerHTML=`<div class="folderHeader" onclick="toggleFolder(${fi})">
+      <span>📂 ${folder.name}</span>
+      <button class="deleteBtn" onclick="event.stopPropagation();deleteFolder(${fi})">Delete</button>
+    </div>
+    <div class="${folder.open?'':'hidden'}"></div>`;
+    let entriesContainer=folderDiv.querySelector("div:last-child");
+    folder.entries.forEach((entry,ei)=>{
+      if((entry.title||"").toLowerCase().includes(search) || (entry.content||"").toLowerCase().includes(search)){
+        let entryDiv=document.createElement("div");
+        entryDiv.className="entry";
+        entryDiv.setAttribute("draggable","true");
+        entryDiv.dataset.folderIndex=fi;
+        entryDiv.dataset.entryIndex=ei;
+        entryDiv.addEventListener("dragstart",e=>{draggedEntry=entryDiv; entryDiv.classList.add("dragging");});
+        entryDiv.addEventListener("dragover",e=>e.preventDefault());
+        entryDiv.addEventListener("drop",e=>{
+          let targetFolder=parseInt(entryDiv.dataset.folderIndex);
+          let targetEntry=parseInt(entryDiv.dataset.entryIndex);
+          let sourceFolder=parseInt(draggedEntry.dataset.folderIndex);
+          let sourceEntry=parseInt(draggedEntry.dataset.entryIndex);
+          if(sourceFolder===targetFolder && sourceEntry===targetEntry) return;
+          let entryObj=data.folders[sourceFolder].entries.splice(sourceEntry,1)[0];
+          data.folders[targetFolder].entries.splice(targetEntry,0,entryObj);
+          saveData(data);
+          displayFolders();
+        });
+        entryDiv.addEventListener("dragend",()=>entryDiv.classList.remove("dragging"));
+
+        let innerHTML=`<input class="title" value="${entry.title}" onclick="toggleEntry(${fi},${ei})" onchange="editTitle(${fi},${ei},this.value)">`;
+        if(entry.locked){
+          innerHTML+=`<div class="locked">🔒 Locked Entry</div>
+          <button class="lockBtn" onclick="unlockEntry(${fi},${ei})">Unlock</button>`;
+        } else {
+          innerHTML+=`<div class="${entry.open?'':'hidden'}">
+          <textarea onchange="editContent(${fi},${ei},this.value)">${entry.content}</textarea>
+          <div class="meta">Created: ${entry.date}</div>
+          <button class="lockBtn" onclick="lockEntry(${fi},${ei})">Lock</button>
+          <button class="deleteBtn" onclick="deleteEntry(${fi},${ei})">Delete</button>
+          </div>`;
+        }
+        entryDiv.innerHTML=innerHTML;
+        entriesContainer.appendChild(entryDiv);
+      }
+    });
+    container.appendChild(folderDiv);
+  });
+}
+
+// ===== REGISTER SERVICE WORKER =====
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(err=>console.log(err));
+}
+</script>
+</body>
+</html>
