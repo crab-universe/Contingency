@@ -191,7 +191,7 @@ button:active { transform: translateY(1px); }
       } else if (hash === GUEST_HASH) {
         isGuest = true;
       } else {
-        errorMsg.innerText = "// ACCESS DENIED";
+        errorMsg.innerText = "ACCESS DENIED";
         passwordInput.style.borderColor = "var(--red)";
         setTimeout(function() { passwordInput.style.borderColor = ""; errorMsg.innerText = ""; }, 2000);
         return;
@@ -227,7 +227,7 @@ button:active { transform: translateY(1px); }
 
   function toggleFolder(i) {
     var data = getData();
-    if (data.folders[i].locked) { alert("// FOLDER LOCKED"); return; }
+    if (data.folders[i].locked) { alert("FOLDER LOCKED"); return; }
     data.folders[i].open = !data.folders[i].open;
     saveData(data);
   }
@@ -283,7 +283,7 @@ button:active { transform: translateY(1px); }
       if (hash === data.folders[fi].entries[ei].password) {
         data.folders[fi].entries[ei].locked = false;
         saveData(data);
-      } else { alert("// WRONG PASSWORD"); }
+      } else { alert("WRONG PASSWORD"); }
     });
   }
 
@@ -307,7 +307,7 @@ button:active { transform: translateY(1px); }
       if (hash === data.folders[fi].password) {
         data.folders[fi].locked = false;
         saveData(data);
-      } else { alert("// WRONG PASSWORD"); }
+      } else { alert("WRONG PASSWORD"); }
     });
   }
 
@@ -315,7 +315,7 @@ button:active { transform: translateY(1px); }
     if (blockGuest()) return;
     var input = document.getElementById("masterPassword");
     sha256(input.value).then(function(hash) {
-      if (hash !== MASTER_HASH) { alert("// WRONG MASTER PASSWORD"); return; }
+      if (hash !== MASTER_HASH) { alert("WRONG MASTER PASSWORD"); return; }
       var data = getData();
       data.folders.forEach(function(f) {
         f.locked = false;
