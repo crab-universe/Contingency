@@ -159,10 +159,20 @@ button:active { transform: translateY(1px); }
   var foldersContainer = document.getElementById("folders");
   var folderSelect = document.getElementById("folderSelect");
 
-  var PASSWORD = "1379";
-  var MASTER_PASSWORD = "hewwo";
-  var GUEST_PASSWORD = "guest";
+  // Passwords stored as SHA-256 hashes only — plaintext never in source
+  var PASSWORD_HASH = "8cfecd937a9328ecb71d3c08e5dd312058ca7d75171e7ba6e3af7573e210cd6c";
+  var MASTER_HASH   = "54f31e68812370c3f0905f3690b5b683510690caab8abeda1f78712cbb08327c";
+  var GUEST_HASH    = "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec";
   var isGuest = false;
+
+  function sha256(str) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
+      .then(function(buf) {
+        return Array.from(new Uint8Array(buf))
+          .map(function(b) { return b.toString(16).padStart(2, "0"); })
+          .join("");
+      });
+  }
 
   function getData() {
     return JSON.parse(localStorage.getItem("notesData")) || { folders: [] };
@@ -175,19 +185,21 @@ button:active { transform: translateY(1px); }
 
   function login() {
     var pass = passwordInput.value.trim();
-    if (pass === PASSWORD || pass === MASTER_PASSWORD) {
-      isGuest = false;
-    } else if (pass === GUEST_PASSWORD) {
-      isGuest = true;
-    } else {
-      errorMsg.innerText = "// ACCESS DENIED";
-      passwordInput.style.borderColor = "var(--red)";
-      setTimeout(function() { passwordInput.style.borderColor = ""; errorMsg.innerText = ""; }, 2000);
-      return;
-    }
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    displayFolders();
+    sha256(pass).then(function(hash) {
+      if (hash === PASSWORD_HASH || hash === MASTER_HASH) {
+        isGuest = false;
+      } else if (hash === GUEST_HASH) {
+        isGuest = true;
+      } else {
+        errorMsg.innerText = "// ACCESS DENIED";
+        passwordInput.style.borderColor = "var(--red)";
+        setTimeout(function() { passwordInput.style.borderColor = ""; errorMsg.innerText = ""; }, 2000);
+        return;
+      }
+      loginDiv.style.display = "none";
+      appDiv.style.display = "block";
+      displayFolders();
+    });
   }
 
   function blockGuest() {
@@ -255,53 +267,63 @@ button:active { transform: translateY(1px); }
     if (blockGuest()) return;
     var pass = prompt("Set entry password");
     if (!pass) return;
-    var data = getData();
-    data.folders[fi].entries[ei].locked = true;
-    data.folders[fi].entries[ei].password = pass;
-    saveData(data);
+    sha256(pass).then(function(hash) {
+      var data = getData();
+      data.folders[fi].entries[ei].locked = true;
+      data.folders[fi].entries[ei].password = hash;
+      saveData(data);
+    });
   }
 
   function unlockEntry(fi, ei) {
     if (blockGuest()) return;
-    var data = getData();
     var pass = prompt("Enter entry password");
-    if (pass === data.folders[fi].entries[ei].password) {
-      data.folders[fi].entries[ei].locked = false;
-      saveData(data);
-    } else { alert("// WRONG PASSWORD"); }
+    sha256(pass).then(function(hash) {
+      var data = getData();
+      if (hash === data.folders[fi].entries[ei].password) {
+        data.folders[fi].entries[ei].locked = false;
+        saveData(data);
+      } else { alert("// WRONG PASSWORD"); }
+    });
   }
 
   function lockFolder(fi) {
     if (blockGuest()) return;
     var pass = prompt("Set folder password");
     if (!pass) return;
-    var data = getData();
-    data.folders[fi].locked = true;
-    data.folders[fi].password = pass;
-    saveData(data);
+    sha256(pass).then(function(hash) {
+      var data = getData();
+      data.folders[fi].locked = true;
+      data.folders[fi].password = hash;
+      saveData(data);
+    });
   }
 
   function unlockFolder(fi) {
     if (blockGuest()) return;
-    var data = getData();
     var pass = prompt("Enter folder password");
-    if (pass === data.folders[fi].password) {
-      data.folders[fi].locked = false;
-      saveData(data);
-    } else { alert("// WRONG PASSWORD"); }
+    sha256(pass).then(function(hash) {
+      var data = getData();
+      if (hash === data.folders[fi].password) {
+        data.folders[fi].locked = false;
+        saveData(data);
+      } else { alert("// WRONG PASSWORD"); }
+    });
   }
 
   function unlockAll() {
     if (blockGuest()) return;
     var input = document.getElementById("masterPassword");
-    if (input.value !== MASTER_PASSWORD) { alert("// WRONG MASTER PASSWORD"); return; }
-    var data = getData();
-    data.folders.forEach(function(f) {
-      f.locked = false;
-      f.entries.forEach(function(e) { e.locked = false; });
+    sha256(input.value).then(function(hash) {
+      if (hash !== MASTER_HASH) { alert("// WRONG MASTER PASSWORD"); return; }
+      var data = getData();
+      data.folders.forEach(function(f) {
+        f.locked = false;
+        f.entries.forEach(function(e) { e.locked = false; });
+      });
+      input.value = "";
+      saveData(data);
     });
-    input.value = "";
-    saveData(data);
   }
 
   function editTitle(fi, ei, value) {
